@@ -16,6 +16,11 @@
     score: .res 1
     lifes: .res 1
     button: .res 1
+    xpositionOne: .res 1
+    xpositionTwo: .res 1
+    ypositionOne: .res 1
+    ypositionTwo: .res 1
+    level: .res 1
     ;states of the game
     TITLE = $00
     PLAYING = $01
@@ -46,8 +51,17 @@ RESET:
     JSR vblankwait
     TXA ;A = $00
 
+    ;set initial values for level 1
     LDA #$00
     STA gamestate
+    LDA $10
+    STA xpositionOne
+    LDA $18
+    STA xpositionTwo
+    LDA $80
+    STA ypositionOne
+    LDA $88
+    STA ypositionTwo
 clearmem:
     LDA #$00        ; can also do TXA as x is $#00
     STA $0000, X
@@ -175,13 +189,26 @@ enginetitle:
         BNE waitforkeypress
     LDA #PLAYING
     STA gamestate
+    JMP clearscreen
     JMP GAMEENGINEDONE
 
 titledone:
 
 
 engineplaying:
-
+    LDA button
+    AND #%00000010 ;left pressed
+    BEQ noleft
+left:
+    JMP leftButton
+noleft:
+    LDA button
+    AND %00000001
+    BEQ noright
+right:
+    JMP rightButton
+    
+noright:
     JMP GAMEENGINEDONE
 
 engineover:
@@ -217,6 +244,59 @@ updatesprites:
     STA $2001
     RTS
 
+clearscreen:
+    LDA $2002
+    LDA #$20
+    STA $2006
+    LDA #$00
+    STA $2006
+    LDX #00
+:
+    LDA principal, X
+    STA $2007
+    INX
+    CPX #$80
+    BNE :-
+
+    LDA $2002
+    LDA #$23
+    STA $2006
+    LDA #$C0
+    STA $2006
+    LDX #$00
+:
+    LDA attributedata, X
+    STA $2007
+    INX
+    CPX #$08
+    BNE :-
+    RTS
+
+leftButton:
+    LDA $0203
+    SEC
+    SBC #01
+    STA $203
+    STA $20B
+    LDA $0207
+    SEC
+    SBC #01
+    STA $207
+    STA $20F
+    RTS
+
+rightButton:
+    LDA $0203
+    CLC
+    ADC #01
+    STA $203
+    STA $20B
+    LDA $0207
+    CLC
+    ADC #01
+    STA $207
+    STA $20F
+    RTS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 palettedata:
@@ -224,11 +304,11 @@ palettedata:
     .byte $22, $16, $27, $18, $22, $1A, $30, $27, $22, $16, $30, $27, $22, $0F, $36, $17  ; sprite palette data
 
 spritedata:
-    ;YCoord, tile number, attr, XCoord
-    .byte $80, $00, $00, $80
-    .byte $80, $01, $00, $88
-    .byte $88, $10, $00, $80
-    .byte $88, $11, $00, $88
+    ;         Y        tile attr       X
+    .byte $80, $00, $00, $10
+    .byte $80, $01, $00, $18
+    .byte $88, $10, $00, $10
+    .byte $88, $11, $00, $18
 
 nametabledata:
     .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$20,$24,$24,$24,$24  ;;row 1
@@ -237,11 +317,11 @@ nametabledata:
     .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 2
     .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;all sky
 
-    .byte $24,$24,$24,$24,$45,$45,$24,$24,$45,$45,$45,$45,$45,$45,$24,$24  ;;row 3
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$53,$54,$24,$24  ;;some brick tops
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 3
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;
 
-    .byte $24,$24,$24,$24,$47,$47,$24,$24,$47,$47,$47,$47,$47,$47,$24,$24  ;;row 4
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$55,$56,$24,$01  ;;brick bottoms
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 4
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;
 
 attributedata:
     .byte %00000000, %00010000, %00100000, %00000000, %00000000, %00000000, %00000000, %00110000
