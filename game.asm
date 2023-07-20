@@ -203,11 +203,10 @@ left:
     JMP leftButton
 noleft:
     LDA button
-    AND %00000001
+    AND #%00000001 ;right pressed
     BEQ noright
 right:
     JMP rightButton
-    
 noright:
     JMP GAMEENGINEDONE
 
