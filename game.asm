@@ -6,7 +6,7 @@
     .byte %00000000     ; 6 mapper 
     .byte $0            ; 7
     .byte $0            ; 8
-    .byte $0            ; 9 TV System 0-NTSC / 1-PAL
+    .byte $1            ; 9 TV System 0-NTSC / 1-PAL
     .byte $0
     .byte $0, $0, $0, $0, $0    ; unused
 
@@ -15,10 +15,6 @@
     score: .res 1
     lifes: .res 1
     button: .res 1
-    xpositionOne: .res 1
-    xpositionTwo: .res 1
-    ypositionOne: .res 1
-    ypositionTwo: .res 1
     level: .res 1
     leftFlag: .res 1
     rightFlag: .res 1
@@ -133,6 +129,7 @@ VBLANK:
 
 
 GAMEENGINE:
+
     LDA gamestate
     CMP #TITLE
     BEQ enginetitle
@@ -147,8 +144,10 @@ GAMEENGINE:
 
 GAMEENGINEDONE:
     JSR updatesprites
-    
     RTI
+
+engineover:
+    JSR GAMEENGINEDONE
 
 enginetitle:
     LDA $2002
@@ -183,19 +182,6 @@ enginetitle:
     LDA #PLAYING
     STA gamestate
     JMP clearscreen
-    ;First level about to start, position of the character
-    LDA $10
-    STA xpositionOne
-    LDA $18
-    STA xpositionTwo
-    LDA $80
-    STA ypositionOne
-    LDA $88
-    STA ypositionTwo
-    JMP GAMEENGINEDONE
-
-engineover:
-
     JMP GAMEENGINEDONE
 
 engineplaying:
@@ -255,11 +241,8 @@ readRIGHT:
     JMP rightButton
 
 buttonRIGHTdone:
-    JMP GAMEENGINEDONE
 
-
-
-
+JMP GAMEENGINEDONE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -269,13 +252,13 @@ palettedata:
 
 spritedata:
     ;      Y   tile attr   X
-    .byte $80, $00, $00, xpositionOne
-    .byte $80, $01, $00, xpositionTwo
-    .byte $88, $10, $00, xpositionOne
-    .byte $88, $11, $00, xpositionTwo
+    .byte $80, $00, $00, $10
+    .byte $80, $01, $00, $18
+    .byte $88, $10, $00, $10
+    .byte $88, $11, $00, $18
 
 cscreen:
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$20,$24,$24,$24,$24  ;;row 1
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 1
     .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;all sky ($24 = sky)
 
     .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 2
@@ -291,7 +274,7 @@ attributedata:
     .byte %00000000, %00010000, %00100000, %00000000, %00000000, %00000000, %00000000, %00110000
 
 principal:
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 1
+    .byte $1B,$12,$17,$0D,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 1
     .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;all sky ($55 = sky)
 
     .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 2
@@ -301,7 +284,7 @@ principal:
     .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;some brick tops
 
     .byte $55,$55,$55,$55,$47,$47,$55,$55,$47,$47,$47,$47,$47,$47,$55,$55  ;;row 4
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$56,$55,$01  ;;brick bottoms
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$1B,$12,$55,$55,$55,$56,$55,$01  ;;brick bottoms
 
 readcontroller:
     LDA #01
