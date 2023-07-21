@@ -11,7 +11,6 @@
     .byte $0, $0, $0, $0, $0    ; unused
 
 .segment "ZEROPAGE" ; $0000 hasta $00FF 256bytes - the fastest ram
-    ;; some variables
     gamestate: .res 1
     score: .res 1
     lifes: .res 1
@@ -21,6 +20,8 @@
     ypositionOne: .res 1
     ypositionTwo: .res 1
     level: .res 1
+    leftFlag: .res 1
+    rightFlag: .res 1
     ;states of the game
     TITLE = $00
     PLAYING = $01
@@ -51,17 +52,6 @@ RESET:
     JSR vblankwait
     TXA ;A = $00
 
-    ;set initial values for level 1
-    LDA #$00
-    STA gamestate
-    LDA $10
-    STA xpositionOne
-    LDA $18
-    STA xpositionTwo
-    LDA $80
-    STA ypositionOne
-    LDA $88
-    STA ypositionTwo
 clearmem:
     LDA #$00        ; can also do TXA as x is $#00
     STA $0000, X
@@ -121,6 +111,10 @@ loadpaletteloop:
     LDA #%00011110 ; background and sprites enabled
     STA $2001
     
+;set initial values for level 1
+LDA #$00
+STA gamestate
+
 forever:
     JMP forever     ; an infinite loop when init code is run
 
@@ -156,7 +150,6 @@ GAMEENGINEDONE:
     
     RTI
 
-
 enginetitle:
     LDA $2002
     LDA #$20
@@ -190,29 +183,125 @@ enginetitle:
     LDA #PLAYING
     STA gamestate
     JMP clearscreen
-    JMP GAMEENGINEDONE
-
-titledone:
-
-
-engineplaying:
-    LDA button
-    AND #%00000010 ;left pressed
-    BEQ noleft
-left:
-    JMP leftButton
-noleft:
-    LDA button
-    AND #%00000001 ;right pressed
-    BEQ noright
-right:
-    JMP rightButton
-noright:
+    ;First level about to start, position of the character
+    LDA $10
+    STA xpositionOne
+    LDA $18
+    STA xpositionTwo
+    LDA $80
+    STA ypositionOne
+    LDA $88
+    STA ypositionTwo
     JMP GAMEENGINEDONE
 
 engineover:
 
     JMP GAMEENGINEDONE
+
+engineplaying:
+;Read the pad
+readA:
+    LDA button       ; player 1 A
+    AND #%10000000  ; only look at the first bit - will be 1 if a being pressed
+    BEQ buttonAdone ; branches to buttonAdone if A not being pressed
+buttonAdone:
+
+readB:
+    LDA button
+    AND #%01000000
+    BEQ buttonBdone ; leave if button not pressed
+buttonBdone:
+
+readSTART:
+    LDA button
+    AND #%00010000
+    BEQ buttonSTARTdone
+
+buttonSTARTdone:
+
+readSELECT:
+    LDA button
+    AND #%00100000
+    BEQ buttonSELECTdone
+
+buttonSELECTdone:
+
+readUP:
+    LDA button
+    AND #%00001000
+    BEQ buttonUPdone
+    
+buttonUPdone:
+
+readDOWN:
+    LDA button
+    AND #%00000100
+    BEQ buttonDOWNdone
+
+buttonDOWNdone:
+
+readLEFT:
+    LDA button
+    AND #%00000010
+    BEQ buttonLEFTdone
+    JMP leftButton
+
+buttonLEFTdone:
+
+readRIGHT:
+    LDA button
+    AND #%00000001
+    BEQ buttonRIGHTdone
+    JMP rightButton
+
+buttonRIGHTdone:
+    JMP GAMEENGINEDONE
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+palettedata:
+    .byte $22, $29, $1a, $0F, $22, $36, $17, $0F, $22, $30, $21, $0F, $22, $27, $17, $0F  ; background palette data
+    .byte $22, $16, $27, $18, $22, $1A, $30, $27, $22, $16, $30, $27, $22, $0F, $36, $17  ; sprite palette data
+
+spritedata:
+    ;      Y   tile attr   X
+    .byte $80, $00, $00, xpositionOne
+    .byte $80, $01, $00, xpositionTwo
+    .byte $88, $10, $00, xpositionOne
+    .byte $88, $11, $00, xpositionTwo
+
+cscreen:
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$20,$24,$24,$24,$24  ;;row 1
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;all sky ($24 = sky)
+
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 2
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;all sky
+
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 3
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;
+
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 4
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;
+
+attributedata:
+    .byte %00000000, %00010000, %00100000, %00000000, %00000000, %00000000, %00000000, %00110000
+
+principal:
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 1
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;all sky ($55 = sky)
+
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 2
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;all sky
+
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 3
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;some brick tops
+
+    .byte $55,$55,$55,$55,$47,$47,$55,$55,$47,$47,$47,$47,$47,$47,$55,$55  ;;row 4
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$56,$55,$01  ;;brick bottoms
 
 readcontroller:
     LDA #01
@@ -251,7 +340,7 @@ clearscreen:
     STA $2006
     LDX #00
 :
-    LDA principal, X
+    LDA cscreen, X
     STA $2007
     INX
     CPX #$80
@@ -296,47 +385,7 @@ rightButton:
     STA $207
     STA $20F
     RTS
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-palettedata:
-    .byte $22, $29, $1a, $0F, $22, $36, $17, $0F, $22, $30, $21, $0F, $22, $27, $17, $0F  ; background palette data
-    .byte $22, $16, $27, $18, $22, $1A, $30, $27, $22, $16, $30, $27, $22, $0F, $36, $17  ; sprite palette data
-
-spritedata:
-    ;         Y        tile attr       X
-    .byte $80, $00, $00, $10
-    .byte $80, $01, $00, $18
-    .byte $88, $10, $00, $10
-    .byte $88, $11, $00, $18
-
-nametabledata:
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$20,$24,$24,$24,$24  ;;row 1
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;all sky ($24 = sky)
-
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 2
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;all sky
-
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 3
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;
-
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 4
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;
-
-attributedata:
-    .byte %00000000, %00010000, %00100000, %00000000, %00000000, %00000000, %00000000, %00110000
-
-principal:
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 1
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;all sky ($55 = sky)
-
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 2
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;all sky
-
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 3
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;some brick tops
-
-    .byte $55,$55,$55,$55,$47,$47,$55,$55,$47,$47,$47,$47,$47,$47,$55,$55  ;;row 4
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$56,$55,$01  ;;brick bottoms
 
 .segment "VECTORS"
     .word  VBLANK
