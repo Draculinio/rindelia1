@@ -134,6 +134,9 @@ VBLANK:
     STA $2003
     LDA #$02
     STA $4014
+
+    JSR updatesprites
+
     LDA #%10010000  ; enable NMI, sprites from pattern table 0, background from pattern table 1
     STA $2000
     LDA #%00011110  ; enable sprites, background, no left side clipping
@@ -158,7 +161,7 @@ GAMEENGINE:
     BEQ engineplaying
 
 GAMEENGINEDONE:
-    JSR updatesprites
+    ;JSR updatesprites
     RTI
 
 engineover:
@@ -221,10 +224,10 @@ attributedata:
     .byte %00000000, %00010000, %00100000, %00000000, %00000000, %00000000, %00000000, %00110000
 
 principal:
-    .byte $1B,$12,$17,$0D,$0E,$15,$12,$0A,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 1
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;all sky ($55 = sky)
+    .byte $1B,$12,$17,$0D,$0E,$15,$12,$0A,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 1
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;all sky ($55 = sky)
 
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 2
+    .byte $1D,$11,$0E,$24,$15,$0E,$10,$0E,$17,$0D,$55,$55,$55,$55,$55,$55  ;;row 2
     .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;all sky
 
     .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 3
@@ -265,6 +268,8 @@ readcontroller:
     LDA #00
     STA $4016
     LDX #$08
+    LDA #$00 ; reset button value to 0
+    STA button; reset button variable
 readcontrollerloop:
     LDA $4016
     LSR A
@@ -308,7 +313,6 @@ updatesprites:
     STA $2001
     RTS
     
-
 clearscreen:
     LDA $2002
     LDA #$20
@@ -352,7 +356,6 @@ moveRight:
     ADC #01
     STA p2x
     RTS
-
 
 .segment "VECTORS"
     .word  VBLANK
