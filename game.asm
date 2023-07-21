@@ -18,6 +18,10 @@
     level: .res 1
     leftFlag: .res 1
     rightFlag: .res 1
+    p1x: .res 1
+    p2x: .res 1
+    p1y: .res 1
+    p2y: .res 1
     ;states of the game
     TITLE = $00
     PLAYING = $01
@@ -100,6 +104,19 @@ loadpaletteloop:
     INX
     CPX #$20
     BNE loadpaletteloop
+
+    ;set initial values for level 1
+    LDA #$00
+    STA gamestate
+    LDA #$10
+    STA p1x
+    LDA #$18
+    STA p2x
+    LDA #$80
+    STA p1y
+    LDA #$88
+    STA p2y
+
     CLI
     LDA #%10010000; enamble NMI, sprites from pattern table 0 and background from pattern table 1
     STA $2000
@@ -107,9 +124,7 @@ loadpaletteloop:
     LDA #%00011110 ; background and sprites enabled
     STA $2001
     
-;set initial values for level 1
-LDA #$00
-STA gamestate
+
 
 forever:
     JMP forever     ; an infinite loop when init code is run
@@ -169,12 +184,6 @@ enginetitle:
     LDA #$C0
     STA $2006
     LDX #$00
-:
-    LDA attributedata, X
-    STA $2007
-    INX
-    CPX #$08
-    BNE :-
     waitforkeypress:
         LDA button
         CMP #%00010000
@@ -182,69 +191,47 @@ enginetitle:
     LDA #PLAYING
     STA gamestate
     JMP clearscreen
+    
     JMP GAMEENGINEDONE
 
 engineplaying:
-;Read the pad
-readA:
-    LDA button       ; player 1 A
-    AND #%10000000  ; only look at the first bit - will be 1 if a being pressed
-    BEQ buttonAdone ; branches to buttonAdone if A not being pressed
-buttonAdone:
-
-readB:
+;read
     LDA button
-    AND #%01000000
-    BEQ buttonBdone ; leave if button not pressed
-buttonBdone:
+left: 
+    CMP #%00000010
+    BNE leftDone
+    JMP moveLeft
+leftDone: 
 
-readSTART:
-    LDA button
-    AND #%00010000
-    BEQ buttonSTARTdone
+right:
+    LDA button 
+    CMP #%00000001
+    BNE rightDone
+    JMP moveRight
+rightDone:
 
-buttonSTARTdone:
-
-readSELECT:
-    LDA button
-    AND #%00100000
-    BEQ buttonSELECTdone
-
-buttonSELECTdone:
-
-readUP:
-    LDA button
-    AND #%00001000
-    BEQ buttonUPdone
-    
-buttonUPdone:
-
-readDOWN:
-    LDA button
-    AND #%00000100
-    BEQ buttonDOWNdone
-
-buttonDOWNdone:
-
-readLEFT:
-    LDA button
-    AND #%00000010
-    BEQ buttonLEFTdone
-    JMP leftButton
-
-buttonLEFTdone:
-
-readRIGHT:
-    LDA button
-    AND #%00000001
-    BEQ buttonRIGHTdone
-    JMP rightButton
-
-buttonRIGHTdone:
-
+LDA #PLAYING
+STA gamestate
 JMP GAMEENGINEDONE
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+attributedata:
+    .byte %00000000, %00010000, %00100000, %00000000, %00000000, %00000000, %00000000, %00110000
+
+principal:
+    .byte $1B,$12,$17,$0D,$0E,$15,$12,$0A,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 1
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;all sky ($55 = sky)
+
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 2
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;all sky
+
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 3
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;some brick tops
+
+    .byte $55,$55,$55,$55,$47,$47,$55,$55,$47,$47,$47,$47,$47,$47,$55,$55  ;;row 4
+    .byte $55,$55,$55,$55,$55,$55,$55,$55,$1B,$12,$55,$55,$55,$56,$55,$01  ;;brick bottoms
 
 palettedata:
     .byte $22, $29, $1a, $0F, $22, $36, $17, $0F, $22, $30, $21, $0F, $22, $27, $17, $0F  ; background palette data
@@ -270,21 +257,7 @@ cscreen:
     .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 4
     .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;
 
-attributedata:
-    .byte %00000000, %00010000, %00100000, %00000000, %00000000, %00000000, %00000000, %00110000
 
-principal:
-    .byte $1B,$12,$17,$0D,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 1
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;all sky ($55 = sky)
-
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 2
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;all sky
-
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;row 3
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55,$55  ;;some brick tops
-
-    .byte $55,$55,$55,$55,$47,$47,$55,$55,$47,$47,$47,$47,$47,$47,$55,$55  ;;row 4
-    .byte $55,$55,$55,$55,$55,$55,$55,$55,$1B,$12,$55,$55,$55,$56,$55,$01  ;;brick bottoms
 
 readcontroller:
     LDA #01
@@ -301,12 +274,32 @@ readcontrollerloop:
     RTS
 
 updatesprites:
-    LDA spritedata,X
-    STA $0200,X
-    INX
-    CPX #$10
-    BNE updatesprites
-
+    ;I will have to do something to UPDATE ALL in the future
+    LDA p1y
+    STA $0200
+    STA $0204
+    LDA p2y
+    STA $0208
+    STA $020C
+    LDA p1x
+    STA $0203
+    STA $020B
+    LDA p2x
+    STA $0207
+    STA $020F
+    LDA #$00 ;this is a tile, should have a variable? (also used for attributes now)
+    STA $0201
+    STA $0202
+    STA $0206
+    STA $020A
+    STA $020E
+    LDA #$01
+    STA $0205
+    LDA #$10
+    STA $0209
+    LDA #$11
+    STA $020D
+    
     CLI
     LDA #%10000000
     STA $2000
@@ -314,6 +307,7 @@ updatesprites:
     LDA #%00010000
     STA $2001
     RTS
+    
 
 clearscreen:
     LDA $2002
@@ -335,38 +329,28 @@ clearscreen:
     LDA #$C0
     STA $2006
     LDX #$00
-:
-    LDA attributedata, X
-    STA $2007
-    INX
-    CPX #$08
-    BNE :-
     RTS
 
-leftButton:
-    LDA $0203
+moveLeft:
+    LDA p1x
     SEC
     SBC #01
-    STA $203
-    STA $20B
-    LDA $0207
+    STA p1x
+    LDA p2x
     SEC
     SBC #01
-    STA $207
-    STA $20F
+    STA p2x
     RTS
 
-rightButton:
-    LDA $0203
+moveRight:
+    LDA p1x
     CLC
     ADC #01
-    STA $203
-    STA $20B
-    LDA $0207
+    STA p1x
+    LDA p2x
     CLC
     ADC #01
-    STA $207
-    STA $20F
+    STA p2x
     RTS
 
 
