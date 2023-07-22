@@ -229,7 +229,7 @@ bDone:
 LDA #$01
 CMP shootStatus
 BNE :+
-;JMP shoot
+JMP shoot
 :
 
 LDA #PLAYING
@@ -389,13 +389,13 @@ moveRight:
     STA p2x
     RTS
 
-;shoot:
+shoot:
     ;for now it will only shoot to the right.
-;    LDA sx
-;    CLC
-;    ADC #01
-;    STA sx
-;    RTS
+    LDA sx
+    CLC
+    ADC #01
+    STA sx
+    RTS
 
 .segment "VECTORS"
     .word  VBLANK
