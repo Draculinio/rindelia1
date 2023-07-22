@@ -24,6 +24,9 @@
     p2y: .res 1
     sx: .res 1 ;shoot in x
     sy: .res 1 ;shoot in y
+    ax: .res 1 ; Aqualate x position
+    ay: .res 1 ; Aqualate y position
+    al: .res 1 ; Aqualate in the loop
     shootStatus: .res 1 ;is the shoot out? $00 no, $01 yes
     ;states of the game
     TITLE = $00
@@ -121,7 +124,12 @@ loadpaletteloop:
     STA sy
     LDA #$88
     STA p2y
-
+    LDA #$01
+    ;This is for the aqualate
+    LDA #$50
+    STA ax
+    LDA #$80
+    STA ay
     CLI
     LDA #%10010000; enamble NMI, sprites from pattern table 0 and background from pattern table 1
     STA $2000
@@ -148,8 +156,6 @@ VBLANK:
     STA $2001
     LDA #$00
     
-    
-
 GAMEENGINE:
     JSR readcontroller ; read the controller
     LDA gamestate
@@ -226,11 +232,14 @@ bButton:
     STA sy
 bDone:
 
+;Shooting update
 LDA #$01
 CMP shootStatus
 BNE :+
 JMP shoot
 :
+;Enemies update
+JMP aqualate
 
 LDA #PLAYING
 STA gamestate
@@ -317,13 +326,13 @@ updatesprites:
     LDA #$11
     STA $020D
     ;Aqualate ($0214 to $0217)
-    LDA #$80
+    LDA ay
     STA $0214
     LDA #$02
     STA $0215
     LDA #$00
     STA $0216
-    LDA #$50
+    LDA ax
     STA $0217
     ;SHOOT ($0210 to $0213)
     LDA sy
@@ -404,6 +413,69 @@ shoot:
     ADC #01
     STA sx
     RTS
+
+aqualate:
+    LDA #$00 ;in the original position x+1, y-1
+    CMP al
+    BNE :+
+    LDA ax
+    CLC
+    ADC #05
+    STA ax
+    LDA ay
+    SEC
+    SBC #05
+    STA ay
+    :
+    LDA #$01 ;position 2 x+1, y+1
+    CMP al 
+    BNE :+
+    LDA ax
+    CLC
+    ADC #05
+    STA ax
+    LDA ay
+    CLC
+    ADC #05
+    STA ay
+    :
+    LDA #$02 ;position 3 x-1, y+1
+    CMP al
+    BNE :+
+    LDA ax
+    SEC
+    SBC #05
+    STA ax
+    LDA ay
+    CLC
+    ADC #05
+    STA ay
+    :
+    LDA #$03 ; position 4 x-1, y-1
+    CMP al
+    BNE :+
+    LDA ax
+    SEC
+    SBC #05
+    STA ax
+    LDA ay
+    SEC
+    SBC #05
+    STA ay
+    :
+    ;update
+    LDA al
+    CLC
+    ADC #01
+    STA al
+    LDA #05
+    CMP al
+    BNE :+
+    LDA #00
+    STA al
+    :
+    RTS
+
 
 .segment "VECTORS"
     .word  VBLANK
