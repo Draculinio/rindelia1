@@ -316,6 +316,15 @@ updatesprites:
     STA $0209
     LDA #$11
     STA $020D
+    ;Aqualate ($0214 to $0217)
+    LDA #$80
+    STA $0214
+    LDA #$02
+    STA $0215
+    LDA #$00
+    STA $0216
+    LDA #$50
+    STA $0217
     ;SHOOT ($0210 to $0213)
     LDA sy
     STA $0210
@@ -332,7 +341,6 @@ updatesprites:
     isShooting:
     LDA #$30
     STA $0211
-    
     shootDone:
     CLI
     LDA #%10000000
