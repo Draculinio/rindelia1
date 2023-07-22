@@ -22,6 +22,9 @@
     p2x: .res 1
     p1y: .res 1
     p2y: .res 1
+    sx: .res 1 ;shoot in x
+    sy: .res 1 ;shoot in y
+    shootStatus: .res 1 ;is the shoot out? $00 no, $01 yes
     ;states of the game
     TITLE = $00
     PLAYING = $01
@@ -88,7 +91,6 @@ clearnametables:
     DEX 
     BNE :-
 
-
 loadpalettes:
     LDA $2002
     LDA #$3F
@@ -105,15 +107,18 @@ loadpaletteloop:
     CPX #$20
     BNE loadpaletteloop
 
-    ;set initial values for level 1
+    ;;;;;;;;;;;;INITIAL VALUES;;;;;;;;;;;;
     LDA #$00
     STA gamestate
+    STA shootStatus
     LDA #$10
     STA p1x
     LDA #$18
     STA p2x
+    STA sx
     LDA #$80
     STA p1y
+    STA sy
     LDA #$88
     STA p2y
 
@@ -124,8 +129,6 @@ loadpaletteloop:
     LDA #%00011110 ; background and sprites enabled
     STA $2001
     
-
-
 forever:
     JMP forever     ; an infinite loop when init code is run
 
@@ -134,20 +137,21 @@ VBLANK:
     STA $2003
     LDA #$02
     STA $4014
-
+    LDA gamestate
+    CMP #PLAYING
+    BNE :+
     JSR updatesprites
-
+    :
     LDA #%10010000  ; enable NMI, sprites from pattern table 0, background from pattern table 1
     STA $2000
     LDA #%00011110  ; enable sprites, background, no left side clipping
     STA $2001
     LDA #$00
     
-    JSR readcontroller ; read the controller
-
+    
 
 GAMEENGINE:
-
+    JSR readcontroller ; read the controller
     LDA gamestate
     CMP #TITLE
     BEQ enginetitle
@@ -194,11 +198,10 @@ enginetitle:
     LDA #PLAYING
     STA gamestate
     JMP clearscreen
-    
     JMP GAMEENGINEDONE
 
 engineplaying:
-;read
+;read button
     LDA button
 left: 
     CMP #%00000010
@@ -206,12 +209,28 @@ left:
     JMP moveLeft
 leftDone: 
 
-right:
-    LDA button 
+right: 
     CMP #%00000001
     BNE rightDone
     JMP moveRight
 rightDone:
+
+bButton:
+    CMP #%01000000
+    BNE bDone
+    LDA #$01
+    STA shootStatus
+    LDA p2x
+    STA sx
+    LDA p1y
+    STA sy
+bDone:
+
+LDA #$01
+CMP shootStatus
+BNE :+
+;JMP shoot
+:
 
 LDA #PLAYING
 STA gamestate
@@ -224,28 +243,21 @@ attributedata:
     .byte %00000000, %00010000, %00100000, %00000000, %00000000, %00000000, %00000000, %00110000
 
 principal:
-    .byte $1B,$12,$17,$0D,$0E,$15,$12,$0A,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 1
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;all sky ($24 = sky)
+    .byte $1B,$12,$17,$0D,$0E,$15,$12,$0A,$24,$24,$24,$24,$24,$24,$24,$24 
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24 
 
-    .byte $24,$24,$1D,$11,$0E,$24,$15,$0E,$10,$0E,$17,$0D,$24,$24,$24,$24  ;;row 2
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;all sky
+    .byte $24,$24,$1D,$11,$0E,$24,$15,$0E,$10,$0E,$17,$0D,$24,$24,$24,$24 
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24 
 
-    .byte $24,$24,$24,$24,$18,$0F,$24,$1D,$11,$0E,$24,$0F,$18,$1E,$1B,$24  ;;row 3
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;some brick tops
+    .byte $24,$24,$24,$24,$18,$0F,$24,$1D,$11,$0E,$24,$0F,$18,$1E,$1B,$24 
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  
 
-    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$10  ;;row 4
-    .byte $0E,$16,$1C,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;brick bottoms
+    .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$10 
+    .byte $0E,$16,$1C,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24 
 
 palettedata:
     .byte $22, $29, $1a, $0F, $22, $36, $17, $0F, $22, $30, $21, $0F, $22, $27, $17, $0F  ; background palette data
     .byte $22, $16, $27, $18, $22, $1A, $30, $27, $22, $16, $30, $27, $22, $0F, $36, $17  ; sprite palette data
-
-spritedata:
-    ;      Y   tile attr   X
-    .byte $80, $00, $00, $10
-    .byte $80, $01, $00, $18
-    .byte $88, $10, $00, $10
-    .byte $88, $11, $00, $18
 
 cscreen:
     .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 1
@@ -259,8 +271,6 @@ cscreen:
 
     .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 4
     .byte $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;
-
-
 
 readcontroller:
     LDA #01
@@ -278,8 +288,10 @@ readcontrollerloop:
     BNE readcontrollerloop
     RTS
 
+;;;;;; SPRITE UPDATING ;;;;;;;;;;;;;;;
 updatesprites:
     ;I will have to do something to UPDATE ALL in the future
+    ;CHARACTER ($0200 to $020F)
     LDA p1y
     STA $0200
     STA $0204
@@ -304,7 +316,24 @@ updatesprites:
     STA $0209
     LDA #$11
     STA $020D
+    ;SHOOT ($0210 to $0213)
+    LDA sy
+    STA $0210
+    LDA sx
+    STA $0213
+    LDA #$00
+    STA $0212
+    LDA #$01
+    CMP shootStatus
+    BEQ isShooting
+    LDA #$FC
+    STA $0211
+    JMP shootDone
+    isShooting:
+    LDA #$30
+    STA $0211
     
+    shootDone:
     CLI
     LDA #%10000000
     STA $2000
@@ -312,7 +341,10 @@ updatesprites:
     LDA #%00010000
     STA $2001
     RTS
-    
+
+shootUpdate:
+
+;;;;;;;;END OF SPRITE UPDATING;;;;;;;;;;;;;;;;;;    
 clearscreen:
     LDA $2002
     LDA #$20
@@ -356,6 +388,14 @@ moveRight:
     ADC #01
     STA p2x
     RTS
+
+;shoot:
+    ;for now it will only shoot to the right.
+;    LDA sx
+;    CLC
+;    ADC #01
+;    STA sx
+;    RTS
 
 .segment "VECTORS"
     .word  VBLANK
