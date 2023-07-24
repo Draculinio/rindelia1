@@ -22,6 +22,7 @@
     p2x: .res 1
     p1y: .res 1
     p2y: .res 1
+    pdir: .res 1 ;player direction 00 right, 01 left
     sx: .res 1 ;shoot in x
     sy: .res 1 ;shoot in y
     ax: .res 1 ; Aqualate x position
@@ -130,6 +131,8 @@ loadpaletteloop:
     STA ax
     LDA #$80
     STA ay
+    LDA #$00
+    STA pdir
     CLI
     LDA #%10010000; enamble NMI, sprites from pattern table 0 and background from pattern table 1
     STA $2000
@@ -301,6 +304,39 @@ readcontrollerloop:
 updatesprites:
     ;I will have to do something to UPDATE ALL in the future
     ;CHARACTER ($0200 to $020F)
+    ;First let's decide which tiles should be used
+    LDA #$00
+    CMP pdir
+    BEQ rightCharTiles
+    LDA #$01
+    STA $0201
+    LDA #$00
+    STA $0205
+    LDA #$11
+    STA $0209
+    LDA #$10
+    STA $020D
+    LDA #$40
+    STA $0202
+    STA $0206
+    STA $020A
+    STA $020E
+    JMP charTilesDone
+    rightCharTiles:
+    LDA #$00
+    STA $0201
+    LDA #$01
+    STA $0205
+    LDA #$10
+    STA $0209
+    LDA #$11
+    STA $020D
+    LDA #$00
+    STA $0202
+    STA $0206
+    STA $020A
+    STA $020E
+    charTilesDone:
     LDA p1y
     STA $0200
     STA $0204
@@ -313,18 +349,7 @@ updatesprites:
     LDA p2x
     STA $0207
     STA $020F
-    LDA #$00 ;this is a tile, should have a variable? (also used for attributes now)
-    STA $0201
-    STA $0202
-    STA $0206
-    STA $020A
-    STA $020E
-    LDA #$01
-    STA $0205
-    LDA #$10
-    STA $0209
-    LDA #$11
-    STA $020D
+    
     ;Aqualate ($0214 to $0217)
     LDA ay
     STA $0214
@@ -393,6 +418,8 @@ moveLeft:
     SEC
     SBC #01
     STA p2x
+    LDA #$01
+    STA pdir
     RTS
 
 moveRight:
@@ -404,6 +431,8 @@ moveRight:
     CLC
     ADC #01
     STA p2x
+    LDA #$00
+    STA pdir
     RTS
 
 shoot:
