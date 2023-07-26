@@ -151,7 +151,6 @@ VBLANK:
     LDA gamestate
     CMP #PLAYING
     BNE :+
-    JSR updatesprites
     :
     LDA #%10010000  ; enable NMI, sprites from pattern table 0, background from pattern table 1
     STA $2000
@@ -174,7 +173,7 @@ GAMEENGINE:
     BEQ engineplaying
 
 GAMEENGINEDONE:
-    ;JSR updatesprites
+    JSR updatesprites
     RTI
 
 engineover:
@@ -193,7 +192,6 @@ enginetitle:
     INX
     CPX #$80
     BNE :-
-
     LDA $2002
     LDA #$23
     STA $2006
@@ -206,23 +204,25 @@ enginetitle:
         BNE waitforkeypress
     LDA #PLAYING
     STA gamestate
-    JMP clearscreen
+    JSR clearscreen
     JMP GAMEENGINEDONE
 
 engineplaying:
 ;read button
     LDA button
-left: 
-    CMP #%00000010
-    BNE leftDone
-    JMP moveLeft
-leftDone: 
 
 right: 
     CMP #%00000001
     BNE rightDone
-    JMP moveRight
+    JSR moveRight
 rightDone:
+
+left: 
+    CMP #%00000010
+    BNE leftDone
+    JSR moveLeft
+leftDone:
+
 
 bButton:
     CMP #%01000000
@@ -234,16 +234,8 @@ bButton:
     LDA p1y
     STA sy
 bDone:
-
-;Shooting update
-LDA #$01
-CMP shootStatus
-BNE :+
-JMP shoot
-:
 ;Enemies update
-JMP aqualate
-
+JSR refreshValues
 LDA #PLAYING
 STA gamestate
 JMP GAMEENGINEDONE
@@ -383,10 +375,8 @@ updatesprites:
     LDA #%00010000
     STA $2001
     RTS
-
-shootUpdate:
-
 ;;;;;;;;END OF SPRITE UPDATING;;;;;;;;;;;;;;;;;;    
+
 clearscreen:
     LDA $2002
     LDA #$20
@@ -409,18 +399,7 @@ clearscreen:
     LDX #$00
     RTS
 
-moveLeft:
-    LDA p1x
-    SEC
-    SBC #01
-    STA p1x
-    LDA p2x
-    SEC
-    SBC #01
-    STA p2x
-    LDA #$01
-    STA pdir
-    RTS
+
 
 moveRight:
     LDA p1x
@@ -435,15 +414,31 @@ moveRight:
     STA pdir
     RTS
 
-shoot:
+moveLeft:
+    LDA p1x
+    SEC
+    SBC #01
+    STA p1x
+    LDA p2x
+    SEC
+    SBC #01
+    STA p2x
+    LDA #$01
+    STA pdir
+    RTS
+
+refreshValues:
+    ;shoot
     ;for now it will only shoot to the right.
+    LDA #$00
+    CMP shootStatus
+    BEQ noshoot
     LDA sx
     CLC
     ADC #01
     STA sx
-    RTS
-
-aqualate:
+    noshoot:
+    ;enemies
     LDA #$00 ;in the original position x+1, y-1
     CMP al
     BNE :+
