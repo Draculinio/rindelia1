@@ -25,6 +25,7 @@
     pdir: .res 1 ;player direction 00 right, 01 left
     sx: .res 1 ;shoot in x
     sy: .res 1 ;shoot in y
+    sd: .res 1 ;shoor direction
     ax: .res 1 ; Aqualate x position
     ay: .res 1 ; Aqualate y position
     al: .res 1 ; Aqualate in the loop
@@ -133,6 +134,7 @@ loadpaletteloop:
     STA ay
     LDA #$00
     STA pdir
+    STA sd
     CLI
     LDA #%10010000; enamble NMI, sprites from pattern table 0 and background from pattern table 1
     STA $2000
@@ -233,6 +235,8 @@ bButton:
     STA sx
     LDA p1y
     STA sy
+    LDA pdir
+    STA sd
 bDone:
 ;Enemies update
 JSR refreshValues
@@ -399,8 +403,6 @@ clearscreen:
     LDX #$00
     RTS
 
-
-
 moveRight:
     LDA p1x
     CLC
@@ -433,10 +435,20 @@ refreshValues:
     LDA #$00
     CMP shootStatus
     BEQ noshoot
+    LDA #01
+    CMP sd
+    BEQ shootLeft
     LDA sx
     CLC
     ADC #01
     STA sx
+    JMP endshoot
+    shootLeft:
+    LDA sx
+    SEC
+    SBC #01
+    STA sx
+    endshoot:
     noshoot:
     ;enemies
     LDA #$00 ;in the original position x+1, y-1
